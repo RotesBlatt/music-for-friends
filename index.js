@@ -37,7 +37,7 @@ client.on("message", async message => {
         message.reply(`Who do you want to ping?`)
         return
       }
-      message.channel.send(`You've been summoned ${pinged}`)
+      message.channel.send(`You've been summoned ${pinged}!`)
       return
     } else if (message.content.split(" ")[0] == `${prefix}pause`) {
       pause(message, serverQueue)
