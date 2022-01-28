@@ -301,8 +301,11 @@ client.on("message", async message => {
   function help(message){
     console.log(`[INFO] Sending user Help`)
     //TODO: Send user a private dm which contains information about how to use this bot
-    message.author.send(`Hello there`)
-    message.reply(`Calling 911...`)
+    message.author.send(`
+    **Welcome to Music for Friends, ${message.author.tag.split("#")[0]}!**
+    This is going to help you when im finished with the basic command stuff    
+    `)
+    message.channel.send(`Calling 911...`)
   }
 
   function listQueue(message, serverQueue){
