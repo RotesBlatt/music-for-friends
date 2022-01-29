@@ -10,11 +10,14 @@ const {prefix, token} = require("./config.json")
 const queue = new Map() 
 const client = new Discord.Client()
 
-client.login(token)
+
 
 client.on("ready", () => {
     console.log(`Logged in as '${client.user.tag}'`)
+    client.user.setActivity(`Prefix: ${prefix}`, {type: 'WATCHING'})
 })
+
+
 
 client.once('ready', () => {
   console.log('Ready!') 
@@ -340,10 +343,11 @@ client.on("message", async message => {
     console.log(`[INFO] Listing current playing song: ${serverQueue.songs[0].title} requested by ${serverQueue.songs[0].requestedBy}`)
     message.channel.send(`Currently playing: **${serverQueue.songs[0].title}**`)
   }
-
+client.login(token)
 
 //TODO: Looping functionality (loop current Queue and/or loop current song)
 //TODO: Download attached files (if mp3) and save them to be played later (https://stackoverflow.com/questions/51550993/download-file-to-local-computer-sent-attatched-to-message-discord/51565540)
 //TODO: Play downloaded mp3's via command (search for name input?)
 //TODO: When disconnecting, clear the serverQueue and stop playing
+//TODO: Disconnecting is weird (stops playing and it wont play anything, even if it has songs in the queue)
 //TODO: Figure out how to play Songs from Spotify
