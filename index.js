@@ -10,24 +10,21 @@ const {prefix, token} = require("./config.json")
 const queue = new Map() 
 const client = new Discord.Client()
 
+var dispatcher = null
 
 
-client.on("ready", () => {
-    console.log(`Logged in as '${client.user.tag}'`)
-    client.user.setActivity(`Prefix: ${prefix}`, {type: 'WATCHING'})
+client.on('ready', () => {
+  console.log(`Logged in as '${client.user.tag}'`)
+  console.log('Ready!') 
+  client.user.setActivity(`Prefix: ${prefix}`, {type: 'WATCHING'})
 })
 
-
-
-client.once('ready', () => {
-  console.log('Ready!') 
- }) 
- client.once('reconnecting', () => {
+client.once('reconnecting', () => {
   console.log('Reconnecting!') 
- }) 
- client.once('disconnect', () => {
+}) 
+client.once('disconnect', () => {
   console.log('Disconnect!') 
- }) 
+}) 
 
 client.on("message", async message => {
     if (message.author.bot) return 
@@ -35,7 +32,7 @@ client.on("message", async message => {
     const serverQueue = queue.get(message.guild.id) 
 
     if (message.content.split(" ")[0] == `${prefix}ping`) {
-      var pinged = message.mentions.members.first() 
+      const pinged = message.mentions.members.first() 
       if (pinged === undefined){
         message.reply(`Who do you want to ping?`)
         return
@@ -226,8 +223,13 @@ client.on("message", async message => {
       return message.channel.send("You have to be in a voice channel to let me leave!") 
     
     console.log(`[INFO] Leaving Voice Channel`)
-    message.member.voice.channel.leave()
-    stop(message, serverQueue)
+    message.guild.me.voice.channel.leave()
+   
+    if(!serverQueue)
+      return message.channel.send(`Leaving ${message.member.voice.channel}`)
+
+    serverQueue.songs = []
+    dispatcher.end()
     return message.channel.send(`Leaving ${message.member.voice.channel}`) 
     
   }
@@ -238,7 +240,7 @@ client.on("message", async message => {
     if (!serverQueue)
       return message.channel.send("There is no song that I could skip!") 
     
-    serverQueue.connection.dispatcher.end()
+    dispatcher.end()
     console.log(`[INFO] User: ${message.author.tag} skipped a Song`)
   }
   
@@ -251,9 +253,8 @@ client.on("message", async message => {
     
     console.log(`[INFO] Stopped Playing Music and Cleared the Songqueue`)
     message.channel.send(`Cleared the queue and stopped playing`)
-    serverQueue.songs = [] 
-    //TODO: Method .end() doesn't work... CHANGE IT
-    serverQueue.connection.dispatcher.end() 
+    serverQueue.songs = []
+    dispatcher.end() 
   }
   
   async function playFromURL(guild, song) {
@@ -266,9 +267,9 @@ client.on("message", async message => {
       return 
     }
     
-    const dispatcher = serverQueue.connection
+    dispatcher = serverQueue.connection
       .play(ytdl(song.url))
-      .on("finish", () => {
+      .on('finish', () => {
         serverQueue.songs.shift() 
         playFromURL(guild, serverQueue.songs[0]) 
       })
@@ -286,7 +287,7 @@ client.on("message", async message => {
       return message.channel.send("There is no song that I could pause!") 
 
     console.log(`[INFO] Pausing song`)
-    serverQueue.connection.dispatcher.pause()
+    dispatcher.pause()
   }
 
   function resume(message, serverQueue){
@@ -297,8 +298,7 @@ client.on("message", async message => {
       return message.channel.send("There is no song that I could resume!") 
 
     console.log(`[INFO] Resuming song`)
-    //TODO: Figure out, why it won't resume a stopped Song
-    serverQueue.connection.dispatcher.resume()
+    dispatcher.resume()
   }
 
   function help(message){
@@ -343,11 +343,10 @@ client.on("message", async message => {
     console.log(`[INFO] Listing current playing song: ${serverQueue.songs[0].title} requested by ${serverQueue.songs[0].requestedBy}`)
     message.channel.send(`Currently playing: **${serverQueue.songs[0].title}**`)
   }
+
 client.login(token)
 
 //TODO: Looping functionality (loop current Queue and/or loop current song)
 //TODO: Download attached files (if mp3) and save them to be played later (https://stackoverflow.com/questions/51550993/download-file-to-local-computer-sent-attatched-to-message-discord/51565540)
 //TODO: Play downloaded mp3's via command (search for name input?)
-//TODO: When disconnecting, clear the serverQueue and stop playing
-//TODO: Disconnecting is weird (stops playing and it wont play anything, even if it has songs in the queue)
 //TODO: Figure out how to play Songs from Spotify
