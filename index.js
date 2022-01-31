@@ -1,6 +1,6 @@
 // Referenz: https://gabrieltanner.org/blog/dicord-music-bot
 // Discord V12 Documentation: https://v12.discordjs.guide/voice/the-basics.html#controlling-the-stream-dispatcher
-// ffmpeg-fluent docs: https://github.com/fluent-ffmpeg/node-fluent-ffmpeg
+// ffmpeg-fluent docs: https://github.com/fluent-ffmpeg/node-fluent-ffmpeg  (convert command in cmd: ffmpeg -i audiofiles\magarete.mp3 -c:a libopus -b:a 96k magarete.ogg)
 
 const Discord = require("discord.js")
 const ytdl = require("ytdl-core")
