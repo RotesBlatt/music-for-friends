@@ -10,7 +10,6 @@ const fs = require('fs')
 const ffmpeg = require('fluent-ffmpeg')
 
 const {prefix, token} = require("./config.json")
-const { type } = require("os")
 
 const queue = new Map() 
 const client = new Discord.Client()
