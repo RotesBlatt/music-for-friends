@@ -58,13 +58,13 @@ client.on("message", async message => {
     } else if (message.content.split(" ")[0] == `${prefix}join`) {
       join(message)
       return
-    } else if (message.content.split(" ")[0] == `${prefix}leave`){
+    } else if (message.content.split(" ")[0] == `${prefix}leave`) {
       leaveVoiceChannel(message, serverQueue)
       return
     } else if (message.content.split(" ")[0] == `${prefix}help`) {
       help(message)
       return
-    } else if (message.content.split(" ")[0] == `${prefix}queue` || message.content.split(" ")[0] == `${prefix}q`){
+    } else if (message.content.split(" ")[0] == `${prefix}queue` || message.content.split(" ")[0] == `${prefix}q`) {
       listQueue(message, serverQueue)
       return
     } else if (message.content.split(" ")[0] == `${prefix}np`) {
@@ -231,8 +231,8 @@ client.on("message", async message => {
 
     serverQueue.songs = []
     dispatcher.end()
+
     return message.channel.send(`Leaving ${message.member.voice.channel}`) 
-    
   }
   
   function skip(message, serverQueue) {
