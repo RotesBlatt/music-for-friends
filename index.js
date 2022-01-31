@@ -1,11 +1,16 @@
 // Referenz: https://gabrieltanner.org/blog/dicord-music-bot
+// Discord V12 Documentation: https://v12.discordjs.guide/voice/the-basics.html#controlling-the-stream-dispatcher
+// ffmpeg-fluent docs: https://github.com/fluent-ffmpeg/node-fluent-ffmpeg
 
 const Discord = require("discord.js")
 const ytdl = require("ytdl-core")
 const ytpl = require("ytpl")
 const ytsr = require("ytsr")
+const fs = require('fs')
+const ffmpeg = require('fluent-ffmpeg')
 
 const {prefix, token} = require("./config.json")
+const { type } = require("os")
 
 const queue = new Map() 
 const client = new Discord.Client()
@@ -69,7 +74,10 @@ client.on("message", async message => {
     } else if (message.content.split(" ")[0] == `${prefix}np`) {
       listCurrentPlayingSong(message, serverQueue)
       return
-    } else {
+    } else if (message.content.split(" ")[0] == `${prefix}mp3`){
+      playAudioFile(message, serverQueue)
+      return 
+    }else {
       console.log(`[INFO] User: ${message.author.tag} used an invalid Command`)
       message.channel.send("You need to enter a valid command!") 
       return
@@ -193,7 +201,7 @@ client.on("message", async message => {
   async function joinVoice(voiceChannel, message, queueContruct){
     try {
       console.log("[INFO] Joining Voicechannel")
-      const connection = await voiceChannel.join() 
+      var connection = await voiceChannel.join() 
       queueContruct.connection = connection
       playFromURL(message.guild, queueContruct.songs[0]) 
     } catch (err) {
@@ -268,7 +276,7 @@ client.on("message", async message => {
     }
     
     dispatcher = serverQueue.connection
-      .play(ytdl(song.url))
+      .play(ytdl(song.url, {type: 'opus'}))
       .on('finish', () => {
         serverQueue.songs.shift() 
         playFromURL(guild, serverQueue.songs[0]) 
@@ -344,9 +352,57 @@ client.on("message", async message => {
     message.channel.send(`Currently playing: **${serverQueue.songs[0].title}**`)
   }
 
+  async function playAudioFile(message, serverQueue){
+    const voiceChannel = message.member.voice.channel
+
+    const queueContruct = {
+      textChannel: message.channel,
+      voiceChannel: voiceChannel,
+      connection: null,
+      songs: [],
+      volume: 5,
+      playing: true
+    } 
+
+    const song = {
+      title: 'magarete',
+      url: 'test.ogg',
+      requestedBy: message.author.tag,
+    } 
+
+    queue.set(message.guild.id, queueContruct)
+
+    queueContruct.songs.push(song)
+
+    await joinVoice(voiceChannel, message, queueContruct)
+
+    if (!song) {
+      // TODO: Der bot soll nach ~5 Minuten nichts abspielen den channel leaven
+      //serverQueue.voiceChannel.leave() 
+      console.log(`[INFO] No more songs in Queue`)
+      queue.delete(guild.id) 
+      return 
+    }
+    //Test this!
+    ffmpeg('Rian_Intro.flv').format('ogg')
+
+    dispatcher = queueContruct.connection
+      .play(fs.createReadStream(song.url), {type: 'ogg/opus'})
+      .on('finish', () => {
+        queueContruct.songs.shift() 
+        playAudioFile(message, queueContruct.songs[0]) 
+      })
+      .on("error", error => console.error(error)) 
+    dispatcher.setVolumeLogarithmic(queueContruct.volume / 5)
+
+    console.log(`[INFO] Playing from mp3`)
+    message.channel.send(`Playing from mp3`)
+  }
+
 client.login(token)
 
 //TODO: Looping functionality (loop current Queue and/or loop current song)
 //TODO: Download attached files (if mp3) and save them to be played later (https://stackoverflow.com/questions/51550993/download-file-to-local-computer-sent-attatched-to-message-discord/51565540)
 //TODO: Play downloaded mp3's via command (search for name input?)
 //TODO: Figure out how to play Songs from Spotify
+//TODO: Mute the bot, but still play the song
