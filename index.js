@@ -1,4 +1,5 @@
 // Referenz: https://gabrieltanner.org/blog/dicord-music-bot
+// Discord V12 Docs: https://v12.discordjs.guide/voice/
 
 const Discord = require("discord.js")
 const ytdl = require("ytdl-core")
@@ -350,3 +351,4 @@ client.login(token)
 //TODO: Download attached files (if mp3) and save them to be played later (https://stackoverflow.com/questions/51550993/download-file-to-local-computer-sent-attatched-to-message-discord/51565540)
 //TODO: Play downloaded mp3's via command (search for name input?)
 //TODO: Figure out how to play Songs from Spotify
+//TODO: Mute the player, but the song plays on
