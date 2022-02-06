@@ -147,7 +147,8 @@ client.on("message", async message => {
         connection: null,
         songs: [],
         volume: 5,
-        playing: true
+        playing: true,
+        timeoutTimer: 5000
       } 
 
       queue.set(message.guild.id, queueContruct)
@@ -196,7 +197,7 @@ client.on("message", async message => {
       console.log("[INFO] Joining Voicechannel")
       const connection = await voiceChannel.join() 
       queueContruct.connection = connection
-      playFromURL(message.guild, queueContruct.songs[0]) 
+      playFromURL(message, queueContruct.songs[0]) 
     } catch (err) {
       console.log(err) 
       queue.delete(message.guild.id) 
@@ -235,6 +236,7 @@ client.on("message", async message => {
     return message.channel.send(`Leaving ${message.member.voice.channel}`) 
   }
   
+  
   function skip(message, serverQueue) {
     if (!message.member.voice.channel)
       return message.channel.send("You have to be in a voice channel to stop the music!") 
@@ -258,21 +260,27 @@ client.on("message", async message => {
     dispatcher.end() 
   }
   
-  async function playFromURL(guild, song) {
-    const serverQueue = queue.get(guild.id) 
+  async function playFromURL(message, song) {
+    const serverQueue = queue.get(message.guild.id) 
+    const timeout = null
     if (!song) {
       // TODO: Der bot soll nach ~5 Minuten nichts abspielen den channel leaven
       //serverQueue.voiceChannel.leave() 
       console.log(`[INFO] No more songs in Queue`)
-      queue.delete(guild.id) 
+      queue.delete(message.guild.id) 
+      setTimeout(function(){
+        leaveVoiceChannel(message, serverQueue)
+      }, serverQueue.timeoutTimer * 100)
       return 
     }
     
+    if(timeout != null) clearTimeout(timeout)
+
     dispatcher = serverQueue.connection
       .play(ytdl(song.url))
       .on('finish', () => {
         serverQueue.songs.shift() 
-        playFromURL(guild, serverQueue.songs[0]) 
+        playFromURL(message, serverQueue.songs[0]) 
       })
       .on("error", error => console.error(error)) 
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5) 
