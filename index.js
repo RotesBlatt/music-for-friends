@@ -12,6 +12,7 @@ const queue = new Map()
 const client = new Discord.Client()
 
 var dispatcher = null
+var timeout = null
 
 
 client.on('ready', () => {
@@ -148,7 +149,8 @@ client.on("message", async message => {
         songs: [],
         volume: 5,
         playing: true,
-        timeoutTimer: 5000
+        timeoutTimer: 5000,
+        timeout: null
       } 
 
       queue.set(message.guild.id, queueContruct)
@@ -224,16 +226,29 @@ client.on("message", async message => {
     if (!message.member.voice.channel)
       return message.channel.send("You have to be in a voice channel to let me leave!") 
     
-    console.log(`[INFO] Leaving Voice Channel`)
-    message.guild.me.voice.channel.leave()
+    leaveVoiceAfterXSeconds(message, 10, true)
    
     if(!serverQueue)
       return message.channel.send(`Leaving ${message.member.voice.channel}`)
 
     serverQueue.songs = []
     dispatcher.end()
-
     return message.channel.send(`Leaving ${message.member.voice.channel}`) 
+  }
+
+  function leaveVoiceAfterXSeconds(message, time, immediate){
+    console.log(`[INFO] Leaving Voice Channel`)
+    if(immediate) {
+      message.guild.me.voice.channel.leave()
+      return
+    }
+    if(!client.voice.connections.size > 0){
+      console.log(`[INFO] Already Disconnected`)
+      return
+    }
+    timeout = setTimeout(function () {
+      message.guild.me.voice.channel.leave()
+    }, time)
   }
   
   
@@ -262,19 +277,21 @@ client.on("message", async message => {
   
   async function playFromURL(message, song) {
     const serverQueue = queue.get(message.guild.id) 
-    const timeout = null
+    
+    if(timeout != null) {
+      console.log(`[INFO] Clearing Timeout of ${serverQueue.timeoutTimer/1000}s`)
+      clearTimeout(timeout)
+    } 
+    
     if (!song) {
-      // TODO: Der bot soll nach ~5 Minuten nichts abspielen den channel leaven
-      //serverQueue.voiceChannel.leave() 
       console.log(`[INFO] No more songs in Queue`)
       queue.delete(message.guild.id) 
-      setTimeout(function(){
-        leaveVoiceChannel(message, serverQueue)
-      }, serverQueue.timeoutTimer * 100)
+      console.log(`[INFO] Setting Timeout to ${serverQueue.timeoutTimer/1000}s`)
+      timeout = setTimeout(function(){
+        leaveVoiceAfterXSeconds(message, serverQueue.timeoutTimer, false)
+      }, serverQueue.timeoutTimer)
       return 
     }
-    
-    if(timeout != null) clearTimeout(timeout)
 
     dispatcher = serverQueue.connection
       .play(ytdl(song.url))
