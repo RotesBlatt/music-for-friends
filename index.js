@@ -289,7 +289,7 @@ client.on("message", async message => {
       console.log(`[INFO] Setting Timeout to ${serverQueue.timeoutTimer/1000}s`)
       timeout = setTimeout(function(){
         leaveVoiceAfterXSeconds(message, serverQueue.timeoutTimer, false)
-      }, serverQueue.timeoutTimer)
+      }, serverQueue.timeoutTimer*100)
       return 
     }
 
