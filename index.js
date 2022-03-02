@@ -377,3 +377,4 @@ client.login(token)
 //TODO: Play downloaded mp3's via command (search for name input?)
 //TODO: Figure out how to play Songs from Spotify
 //TODO: Mute the player, but the song plays on
+//TODO: Clip abspielen bevor der Bot den Channel verlässt (https://www.youtube.com/watch?v=r5sTTlph2Vk)
