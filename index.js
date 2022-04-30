@@ -71,6 +71,12 @@ client.on("message", async message => {
     } else if (message.content.split(" ")[0] == `${prefix}np`) {
       listCurrentPlayingSong(message, serverQueue)
       return
+    } else if(message.content.split(" ")[0] == `${prefix}loop`){
+      loopCurrentSong(message, serverQueue)
+      return
+    } else if(message.content.split(" ")[0] == `${prefix}qloop` || message.content.split(" ")[0] == `${prefix}queueloop`){
+      loopCurrentSongQueue(message, serverQueue)
+      return
     } else {
       console.log(`[INFO] User: ${message.author.tag} used an invalid Command`)
       message.channel.send("You need to enter a valid command!") 
@@ -150,7 +156,8 @@ client.on("message", async message => {
         volume: 5,
         playing: true,
         timeoutTimer: 5000,
-        timeout: null
+        timeout: null,
+        loopSong: false
       } 
 
       queue.set(message.guild.id, queueContruct)
@@ -165,6 +172,7 @@ client.on("message", async message => {
       }
       
       await joinVoice(voiceChannel, message, queueContruct)
+      queueContruct.currentSong = await ytdl(song.url)
 
     } else {
       if(!client.voice.connections.size > 0){
@@ -232,6 +240,7 @@ client.on("message", async message => {
       return message.channel.send(`Leaving ${message.member.voice.channel}`)
 
     serverQueue.songs = []
+    serverQueue.loopSong = false;
     dispatcher.end()
     return message.channel.send(`Leaving ${message.member.voice.channel}`) 
   }
@@ -250,6 +259,23 @@ client.on("message", async message => {
       message.guild.me.voice.channel.leave()
     }, time)
   }
+
+  function loopCurrentSong(message, serverQueue){
+    if (!message.member.voice.channel)
+      return message.channel.send("You have to be in a voice channel to loop the song!") 
+    if (!serverQueue)
+      return message.channel.send("There is no song that I could loop!")
+    
+    serverQueue.loopSong = !serverQueue.loopSong;
+    console.log(`[INFO] Changed Song Loop Status to ${serverQueue.loopSong}`)
+    if(serverQueue.loopSong){
+      console.log(`[INFO] Looping song: ${serverQueue.songs[0].title}`)
+      message.channel.send(`Enabled Song Looping` )
+    } else {
+      message.channel.send(`Disabled Song Looping` )
+    }
+    
+  }
   
   
   function skip(message, serverQueue) {
@@ -258,6 +284,9 @@ client.on("message", async message => {
     if (!serverQueue)
       return message.channel.send("There is no song that I could skip!") 
     
+    if(serverQueue.loopSong){
+      serverQueue.songs.shift()
+    }
     dispatcher.end()
     console.log(`[INFO] User: ${message.author.tag} skipped a Song`)
   }
@@ -272,6 +301,7 @@ client.on("message", async message => {
     console.log(`[INFO] Stopped Playing Music and Cleared the Songqueue`)
     message.channel.send(`Cleared the queue and stopped playing`)
     serverQueue.songs = []
+    serverQueue.loopSong = false
     dispatcher.end() 
   }
   
@@ -293,16 +323,31 @@ client.on("message", async message => {
       return 
     }
 
+      
     dispatcher = serverQueue.connection
-      .play(ytdl(song.url))
+      .play(ytdl(song.url, {filter: 'audioonly'}))
       .on('finish', () => {
-        serverQueue.songs.shift() 
+        if(!serverQueue.loopSong){
+          serverQueue.songs.shift() 
+        }
         playFromURL(message, serverQueue.songs[0]) 
       })
-      .on("error", error => console.error(error)) 
+      .on("error", error => {
+        try {
+          throw new Error();
+        } catch {
+          dispatcher.end()
+          console.error(error)
+          return
+        }
+      })
+
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5) 
-    serverQueue.textChannel.send(`Now playing: **${song.title}**`) 
-    console.log(`[INFO] Now playing: ${song.title} requested by ${song.requestedBy}`)
+    if(!serverQueue.loopSong){
+      serverQueue.textChannel.send(`Now playing: **${song.title}**`) 
+      console.log(`[INFO] Now playing: ${song.title} requested by ${song.requestedBy}`)
+    }
+    
   }
 
   function pause(message, serverQueue){
@@ -378,3 +423,4 @@ client.login(token)
 //TODO: Figure out how to play Songs from Spotify
 //TODO: Mute the player, but the song plays on
 //TODO: Clip abspielen bevor der Bot den Channel verlässt (https://www.youtube.com/watch?v=r5sTTlph2Vk)
+//TODO: CHeck for error (!p !p https://www.youtube.com/watch?v=r5sTTlph2Vk)
