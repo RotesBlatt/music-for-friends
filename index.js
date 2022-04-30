@@ -71,11 +71,11 @@ client.on("message", async message => {
     } else if (message.content.split(" ")[0] == `${prefix}np`) {
       listCurrentPlayingSong(message, serverQueue)
       return
+    }  else if(message.content.split(" ")[0] == `${prefix}qloop` || message.content.split(" ")[0] == `${prefix}queueloop`){
+      loopCurrentSongQueue(message, serverQueue)
+      return
     } else if(message.content.split(" ")[0] == `${prefix}loop`){
       loopCurrentSong(message, serverQueue)
-      return
-    } else if(message.content.split(" ")[0] == `${prefix}qloop` || message.content.split(" ")[0] == `${prefix}queueloop`){
-      loopCurrentSongQueue(message, serverQueue)
       return
     } else {
       console.log(`[INFO] User: ${message.author.tag} used an invalid Command`)
@@ -148,7 +148,7 @@ client.on("message", async message => {
 
     if(!serverQueue){
 
-      const queueContruct = {
+      var queueContruct = {
         textChannel: message.channel,
         voiceChannel: voiceChannel,
         connection: null,
@@ -157,7 +157,10 @@ client.on("message", async message => {
         playing: true,
         timeoutTimer: 5000,
         timeout: null,
-        loopSong: false
+        loopSong: false,
+        loopSongQueue: false,
+        currentSongQueue: [],
+        currentSongQueueIndex: 1
       } 
 
       queue.set(message.guild.id, queueContruct)
@@ -240,7 +243,10 @@ client.on("message", async message => {
       return message.channel.send(`Leaving ${message.member.voice.channel}`)
 
     serverQueue.songs = []
-    serverQueue.loopSong = false;
+    serverQueue.loopSong = false
+    serverQueue.loopSongQueue = false
+    serverQueue.currentSongQueue = []
+    serverQueue.currentSongQueueIndex = 1
     dispatcher.end()
     return message.channel.send(`Leaving ${message.member.voice.channel}`) 
   }
@@ -266,7 +272,12 @@ client.on("message", async message => {
     if (!serverQueue)
       return message.channel.send("There is no song that I could loop!")
     
-    serverQueue.loopSong = !serverQueue.loopSong;
+    if(serverQueue.loopSongQueue){
+      serverQueue.loopSongQueue = false
+      message.channel.send("Disabled SongQueue Looping")
+    }
+
+    serverQueue.loopSong = !serverQueue.loopSong
     console.log(`[INFO] Changed Song Loop Status to ${serverQueue.loopSong}`)
     if(serverQueue.loopSong){
       console.log(`[INFO] Looping song: ${serverQueue.songs[0].title}`)
@@ -275,6 +286,42 @@ client.on("message", async message => {
       message.channel.send(`Disabled Song Looping` )
     }
     
+  }
+
+  function loopCurrentSongQueue(message, serverQueue){
+    if (!message.member.voice.channel)
+      return message.channel.send("You have to be in a voice channel to loop the songqueue!") 
+    if (!serverQueue)
+      return message.channel.send("There is no songqueue that I could loop!")
+
+    if(serverQueue.loopSong){
+      serverQueue.loopSong = false
+      message.channel.send("Disabled Song Looping")
+    }
+
+
+    serverQueue.loopSongQueue = !serverQueue.loopSongQueue
+    console.log(`[INFO] Changed current SongQueue Loop Status to ${serverQueue.loopSongQueue}`)
+    if(serverQueue.loopSongQueue){
+      console.log(`[INFO] Looping current SongQueue`)
+      message.channel.send(`Enabled SongQueue Looping` )
+
+      serverQueue.currentSongQueue = serverQueue.songs
+      serverQueue.currentSongQueueIndex = 1
+    } else {
+      message.channel.send(`Disabled songqueue Looping` )
+      shiftSongQueueToIndex(serverQueue, serverQueue.currentSongQueueIndex)
+      serverQueue.currentSongQueue = []
+      serverQueue.currentSongQueueIndex = 1 
+    }
+  }
+
+  function shiftSongQueueToIndex(serverQueue, index){
+    serverQueue.songs.forEach(function (i) {
+      if(i > index) return
+      serverQueue.songs.shift()
+      console.log(`Shifting: ${i}`)
+    })
   }
   
   
@@ -286,6 +333,8 @@ client.on("message", async message => {
     
     if(serverQueue.loopSong){
       serverQueue.songs.shift()
+    } else if(serverQueue.loopSongQueue) {
+      serverQueue.currentSongQueueIndex = serverQueue.currentSongQueueIndex + 1
     }
     dispatcher.end()
     console.log(`[INFO] User: ${message.author.tag} skipped a Song`)
@@ -302,6 +351,8 @@ client.on("message", async message => {
     message.channel.send(`Cleared the queue and stopped playing`)
     serverQueue.songs = []
     serverQueue.loopSong = false
+    serverQueue.loopSongQueue = false
+    serverQueue.currentSongQueue = []
     dispatcher.end() 
   }
   
@@ -327,10 +378,19 @@ client.on("message", async message => {
     dispatcher = serverQueue.connection
       .play(ytdl(song.url, {filter: 'audioonly'}))
       .on('finish', () => {
-        if(!serverQueue.loopSong){
-          serverQueue.songs.shift() 
+        
+        if(serverQueue.loopSongQueue){
+          if(serverQueue.currentSongQueueIndex > serverQueue.currentSongQueue.length - 1){
+            serverQueue.currentSongQueueIndex = 0  
+          }
+          playFromURL(message, serverQueue.currentSongQueue[serverQueue.currentSongQueueIndex])
+          serverQueue.currentSongQueueIndex = serverQueue.currentSongQueueIndex + 1
+        } else if(serverQueue.loopSong) {
+          playFromURL(message, serverQueue.songs[0])
+        } else {
+          serverQueue.songs.shift()
+          playFromURL(message, serverQueue.songs[0]) 
         }
-        playFromURL(message, serverQueue.songs[0]) 
       })
       .on("error", error => {
         try {
@@ -344,7 +404,6 @@ client.on("message", async message => {
 
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5) 
     if(!serverQueue.loopSong){
-      serverQueue.textChannel.send(`Now playing: **${song.title}**`) 
       console.log(`[INFO] Now playing: ${song.title} requested by ${song.requestedBy}`)
     }
     
