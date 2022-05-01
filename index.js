@@ -324,7 +324,6 @@ client.on("message", async message => {
       if(i >= index) return
       serverQueue.songs.shift()
       i = i + 1
-      console.log(`Shifting: ${i}`)
     })
   }
   
@@ -388,15 +387,12 @@ client.on("message", async message => {
     dispatcher = serverQueue.connection
       .play(ytdl(song.url, {filter: 'audioonly'}))
       .on('finish', () => {
-        
         if(serverQueue.loopSongQueue){
           if(serverQueue.currentSongQueueIndex > serverQueue.currentSongQueue.length){
             serverQueue.currentSongQueueIndex = 1  
           }
-          console.log(`Index before Playing ${serverQueue.currentSongQueueIndex}`)
           playFromURL(message, serverQueue.currentSongQueue[serverQueue.currentSongQueueIndex-1])
           serverQueue.currentSongQueueIndex += 1
-          console.log(`Index after Playing ${serverQueue.currentSongQueueIndex}`)
         } else if(serverQueue.loopSong) {
           playFromURL(message, serverQueue.songs[0])
         } else {
