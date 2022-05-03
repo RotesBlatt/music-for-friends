@@ -19,6 +19,7 @@ client.on('ready', () => {
   console.log(`Logged in as '${client.user.tag}'`)
   console.log('Ready!') 
   client.user.setActivity(`Prefix: ${prefix}`, {type: 'WATCHING'})
+  client.guilds.cache.each(guild => guild.me.edit({mute: false}))
 })
 
 client.once('reconnecting', () => {
@@ -50,8 +51,11 @@ client.on("message", async message => {
     } else if (message.content.split(" ")[0] == `${prefix}stop`) {
       stop(message, serverQueue) 
       return     
+    } else if(message.content.split(" ")[0] == `${prefix}mute` || message.content.split(" ")[0] == `${prefix}unmute`){
+      muteAudio(message, serverQueue)
+      return
     } else if (message.content.split(" ")[0] == `${prefix}skip` || message.content.split(" ")[0] == `${prefix}s`) {
-      skip(message, serverQueue) 
+      skip(message, serverQueue, message.content.split(" ")[1]) 
       return 
     } else if (message.content.split(" ")[0] == `${prefix}resume`) {
       resume(message, serverQueue)
@@ -77,6 +81,9 @@ client.on("message", async message => {
     } else if(message.content.split(" ")[0] == `${prefix}loop`){
       loopCurrentSong(message, serverQueue)
       return
+    } else if(message.content.split(" ")[0] == `${prefix}remove` || message.content.split(" ")[0] == `${prefix}r`){
+      removeAtIndex(message, serverQueue)
+      return
     } else {
       console.log(`[INFO] User: ${message.author.tag} used an invalid Command`)
       message.channel.send("You need to enter a valid command!") 
@@ -87,7 +94,7 @@ client.on("message", async message => {
   async function execute(message, serverQueue) {
     const args = message.content.split(" ")
     
-    var userInput = ""
+    let userInput = ""
     args.forEach(function (element,i) {
       if(i == 0) return
       userInput = userInput + `${element} `
@@ -101,11 +108,11 @@ client.on("message", async message => {
       return message.channel.send("I need the permissions to join and speak in your voice channel!") 
     }
 
-    if(!await ytdl.validateURL(userInput) && !await ytpl.validateID(userInput)){
+    if(args.length > 2){
       const filter = await ytsr.getFilters(userInput)
       const filters = filter.get("Type").get("Video")
 
-      console.log(`[INFO] Fetching Video Information from input`)
+      console.log(`[INFO] Fetching Video Information from input`)    
       const searchResults = await ytsr(filters.url, {pages: 1})
       const songInfo = await ytdl.getInfo(searchResults.items[0].url)
       enqueueSongs(message, serverQueue, songInfo, false)
@@ -125,9 +132,11 @@ client.on("message", async message => {
       console.log(`[INFO] Fetching Playlist Information`)
       const songInfo = await ytpl.getPlaylistID(userInput)
       enqueueSongs(message, serverQueue, songInfo, true)
+      return
     } catch (error) {
       console.log(`[INFO] Playlist URL Invalid`)      
     }   
+    message.channel.send("The song you requested can not be played :|")
   }
 
   async function enqueueSongs(message, serverQueue, songInfo, isPlaylist){
@@ -160,7 +169,8 @@ client.on("message", async message => {
         loopSong: false,
         loopSongQueue: false,
         currentSongQueue: [],
-        currentSongQueueIndex: 1
+        currentSongQueueIndex: 1,
+        isMuted: false
       } 
 
       queue.set(message.guild.id, queueContruct)
@@ -238,6 +248,7 @@ client.on("message", async message => {
       return message.channel.send("You have to be in a voice channel to let me leave!") 
     
     leaveVoiceAfterXSeconds(message, 10, true)
+    
    
     if(!serverQueue)
       return message.channel.send(`Leaving ${message.member.voice.channel}`)
@@ -328,21 +339,12 @@ client.on("message", async message => {
   }
   
   
-  function skip(message, serverQueue) {
+  function skip(message, serverQueue, args) {
     if (!message.member.voice.channel)
       return message.channel.send("You have to be in a voice channel to stop the music!") 
     if (!serverQueue)
       return message.channel.send("There is no song that I could skip!") 
-
-    
-    if(!serverQueue.loopSong && serverQueue.loopSongQueue){
-      
-    } else if(serverQueue.loopSong && !serverQueue.loopSongQueue){
-      
-    } else {
-      serverQueue.songs.shift()
-    }
- 
+   
     dispatcher.end()
     console.log(`[INFO] User: ${message.author.tag} skipped a Song`)
   }
@@ -363,12 +365,36 @@ client.on("message", async message => {
     serverQueue.currentSongQueueIndex = 1
     dispatcher.end() 
   }
+
+  function removeAtIndex(message, serverQueue){
+    if (!message.member.voice.channel)
+      return message.channel.send("You have to be in a voice channel to remove a song from the queue!") 
+    if (!serverQueue)
+      return message.channel.send("There is no song that I could remove!")
+
+    const index = parseInt(message.content.split(" ")[1])
+    if(isNaN(index) || index > serverQueue.songs.length){
+      console.log(`[WARN] Invalid input for method removeAtIndex()`)
+      return message.channel.send("Please enter a valid number to remove a song from the queue ")
+    } else if(index == 1){
+      console.log(`[WARN] Trying to rmove playing song`)
+      return message.channel.send(`You can't remove the song which is playing atm`)
+    }
+    console.log(`[INFO] Removing Song at Index: ${index}`)
+    
+    message.channel.send(`Removing **${serverQueue.songs[index-1].title}** from the queue`)
+    serverQueue.songs.splice(index-1, index-1)
+
+  }
   
   async function playFromURL(message, song) {
     const serverQueue = queue.get(message.guild.id) 
     
     if(timeout != null) {
       console.log(`[INFO] Clearing Timeout of ${serverQueue.timeoutTimer/1000}s`)
+      if(client.voice.connections.size > 0){
+        serverQueue.voiceChannel.guild.me.edit({mute: false})
+      }
       clearTimeout(timeout)
     } 
 
@@ -382,7 +408,6 @@ client.on("message", async message => {
       return 
     }
 
-    
       
     dispatcher = serverQueue.connection
       .play(ytdl(song.url, {filter: 'audioonly'}))
@@ -416,6 +441,25 @@ client.on("message", async message => {
       console.log(`[INFO] Now playing: ${song.title} requested by ${song.requestedBy}`)
       serverQueue.textChannel.send(`Now playing: **${song.title}**`) 
     }
+    
+  }
+
+  function muteAudio(message, serverQueue){
+    if (!message.member.voice.channel)
+      return message.channel.send("You have to be in a voice channel to mute the music!") 
+      
+    if (!serverQueue)
+      return message.channel.send("There is no song that I could mute!") 
+
+      serverQueue.isMuted = !serverQueue.isMuted
+    if(serverQueue.isMuted){
+      console.log(`[INFO] Muting audio output`)
+      serverQueue.voiceChannel.guild.me.edit({mute: true})
+      
+    } else {
+      console.log(`[INFO] Unmuting audio output`)
+      serverQueue.voiceChannel.guild.me.edit({mute: false})
+    }  
     
   }
 
@@ -486,12 +530,8 @@ client.on("message", async message => {
 
 client.login(token)
 
-//TODO: Looping functionality (loop current Queue and/or loop current song)
+
 //TODO: Download attached files (if mp3) and save them to be played later (https://stackoverflow.com/questions/51550993/download-file-to-local-computer-sent-attatched-to-message-discord/51565540)
 //TODO: Play downloaded mp3's via command (search for name input?)
 //TODO: Figure out how to play Songs from Spotify
-//TODO: Mute the player, but the song plays on
 //TODO: Clip abspielen bevor der Bot den Channel verlässt (https://www.youtube.com/watch?v=r5sTTlph2Vk)
-//TODO: CHeck for error (!p !p https://www.youtube.com/watch?v=r5sTTlph2Vk)
-//TODO: Skip specific songs (!skip 4)
-//TODO: Remove specific songs (!remove 2)
