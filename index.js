@@ -19,7 +19,6 @@ client.on('ready', () => {
   console.log(`Logged in as '${client.user.tag}'`)
   console.log('Ready!') 
   client.user.setActivity(`Prefix: ${prefix}`, {type: 'WATCHING'})
-  client.guilds.cache.each(guild => guild.me.edit({mute: false}))
 })
 
 client.once('reconnecting', () => {
@@ -220,6 +219,7 @@ client.on("message", async message => {
       console.log("[INFO] Joining Voicechannel")
       const connection = await voiceChannel.join() 
       queueContruct.connection = connection
+      voiceChannel.guild.me.edit({mute: false})
       playFromURL(message, queueContruct.songs[0]) 
     } catch (err) {
       console.log(err) 
@@ -392,9 +392,6 @@ client.on("message", async message => {
     
     if(timeout != null) {
       console.log(`[INFO] Clearing Timeout of ${serverQueue.timeoutTimer/1000}s`)
-      if(client.voice.connections.size > 0){
-        serverQueue.voiceChannel.guild.me.edit({mute: false})
-      }
       clearTimeout(timeout)
     } 
 
@@ -451,7 +448,7 @@ client.on("message", async message => {
     if (!serverQueue)
       return message.channel.send("There is no song that I could mute!") 
 
-      serverQueue.isMuted = !serverQueue.isMuted
+    serverQueue.isMuted = !serverQueue.isMuted
     if(serverQueue.isMuted){
       console.log(`[INFO] Muting audio output`)
       serverQueue.voiceChannel.guild.me.edit({mute: true})
