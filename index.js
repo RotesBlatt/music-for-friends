@@ -45,8 +45,8 @@ client.on("message", async message => {
         }
         message.channel.send(`You've been summoned ${pinged}!`)
         break
-        case `${prefix}pause`:
-          pause(message, serverQueue)
+      case `${prefix}pause`:
+        pause(message, serverQueue)
         break
       case `${prefix}play` | `${prefix}p`:
         execute(message, serverQueue)
