@@ -31,66 +31,69 @@ client.once('disconnect', () => {
 client.on("message", async message => {
     if (message.author.bot) return 
     if (!message.content.startsWith(prefix)) return 
-    const serverQueue = queue.get(message.guild.id) 
-
-    if (message.content.split(" ")[0] == `${prefix}ping`) {
-      const pinged = message.mentions.members.first() 
-      if (pinged === undefined){
-        message.reply(`Who do you want to ping?`)
-        return
-      }
-      message.channel.send(`You've been summoned ${pinged}!`)
-      return
-    } else if (message.content.split(" ")[0] == `${prefix}pause`) {
-      pause(message, serverQueue)
-      return
-    } else if (message.content.split(" ")[0] == `${prefix}play` || message.content.split(" ")[0] == `${prefix}p`) {
-      execute(message, serverQueue) 
-      return 
-    } else if (message.content.split(" ")[0] == `${prefix}stop`) {
-      stop(message, serverQueue) 
-      return     
-    } else if(message.content.split(" ")[0] == `${prefix}mute` || message.content.split(" ")[0] == `${prefix}unmute`){
-      muteAudio(message, serverQueue)
-      return
-    } else if (message.content.split(" ")[0] == `${prefix}skip` || message.content.split(" ")[0] == `${prefix}s`) {
-      skip(message, serverQueue) 
-      return 
-    } else if (message.content.split(" ")[0] == `${prefix}resume`) {
-      resume(message, serverQueue)
-      return
-    } else if (message.content.split(" ")[0] == `${prefix}join`) {
-      join(message)
-      return
-    } else if (message.content.split(" ")[0] == `${prefix}leave`) {
-      leaveVoiceChannel(message, serverQueue)
-      return
-    } else if (message.content.split(" ")[0] == `${prefix}help`) {
-      help(message)
-      return
-    } else if (message.content.split(" ")[0] == `${prefix}queue` || message.content.split(" ")[0] == `${prefix}q`) {
-      listQueue(message, serverQueue)
-      return
-    } else if (message.content.split(" ")[0] == `${prefix}np`) {
-      listCurrentPlayingSong(message, serverQueue)
-      return
-    }  else if(message.content.split(" ")[0] == `${prefix}qloop` || message.content.split(" ")[0] == `${prefix}queueloop`){
-      loopCurrentSongQueue(message, serverQueue)
-      return
-    } else if(message.content.split(" ")[0] == `${prefix}loop`){
-      loopCurrentSong(message, serverQueue)
-      return
-    } else if(message.content.split(" ")[0] == `${prefix}remove` || message.content.split(" ")[0] == `${prefix}r`){
-      removeAtIndex(message, serverQueue)
-      return
-    } else {
-      console.log(`[INFO] User: ${message.author.tag} used an invalid Command`)
-      message.channel.send("You need to enter a valid command!") 
-      return
-    }
+    const serverQueue = queue.get(message.guild.id)
+    handleUserInput(message, serverQueue)
   }) 
 
-  function extraxtUserInput(args){
+  function handleUserInput(message, serverQueue){
+    switch(message.content.split(" ")[0]){
+      case `${prefix}ping`:
+        const pinged = message.mentions.members.first() 
+        if (pinged === undefined){
+          message.reply(`Who do you want to ping?`)
+          break
+        }
+        message.channel.send(`You've been summoned ${pinged}!`)
+        break
+        case `${prefix}pause`:
+          pause(message, serverQueue)
+        break
+      case `${prefix}play` | `${prefix}p`:
+        execute(message, serverQueue)
+        break
+      case `${prefix}stop`:
+        stop(message, serverQueue)
+        break
+      case `${prefix}mute` | `${prefix}unmute`:
+        muteAudio(message, serverQueue)
+        break
+      case `${prefix}skip` | `${prefix}s`:
+        skip(message, serverQueue)
+        break
+      case `${prefix}resume`:
+        resume(message, serverQueue)
+        break
+      case `${prefix}join`:
+        join(message)
+        break
+      case `${prefix}leave`:
+        leaveVoiceChannel(message, serverQueue)
+        break
+      case `${prefix}help`:
+        help(message)
+      case `${prefix}queue` | `${prefix}q`:
+        listQueue(message, serverQueue)
+        break
+      case `${prefix}np`:
+        listCurrentPlayingSong(message, serverQueue)
+        break
+      case `${prefix}qloop` | `${prefix}queueloop`:
+        loopCurrentSongQueue(message, serverQueue)
+        break
+      case `${prefix}loop`:
+        loopCurrentSong(message, serverQueue)
+        break
+      case `${prefix}remove` | `${prefix}r`:
+        removeAtIndex(message, serverQueue)
+        break
+      default:
+        console.log(`[INFO] User: ${message.author.tag} used an invalid Command`)
+        message.channel.send("You need to enter a valid command!")
+        break
+    }
+  }
+
+  function extractUserInput(args){
     let out = ""
     args.forEach(function (element,i) {
       if(i == 0) return
@@ -102,7 +105,7 @@ client.on("message", async message => {
   async function execute(message, serverQueue) {
     const args = message.content.split(" ")
     
-    let userInput = extraxtUserInput(args)
+    let userInput = extractUserInput(args)
     
     const voiceChannel = message.member.voice.channel 
     if (!voiceChannel)
@@ -375,7 +378,6 @@ client.on("message", async message => {
     
     message.channel.send(`Removing **${serverQueue.songs[index-1].title}** from the queue`)
     serverQueue.songs.splice(index-1, index-1)
-
   }
   
   async function playFromURL(message, song) {
