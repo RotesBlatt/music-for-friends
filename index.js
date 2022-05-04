@@ -89,20 +89,27 @@ client.on("message", async message => {
       return
     }
   }) 
+
+  function extraxtUserInput(args){
+    let out = ""
+    args.forEach(function (element,i) {
+      if(i == 0) return
+      out = out + `${element} `
+    })
+    return out
+  }
   
   async function execute(message, serverQueue) {
     const args = message.content.split(" ")
     
-    let userInput = ""
-    args.forEach(function (element,i) {
-      if(i == 0) return
-      userInput = userInput + `${element} `
-    })
+    let userInput = extraxtUserInput(args)
     
     const voiceChannel = message.member.voice.channel 
     if (!voiceChannel)
       return message.channel.send("You need to be in a voice channel to play music!") 
+
     const permissions = voiceChannel.permissionsFor(message.client.user) 
+    
     if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
       return message.channel.send("I need the permissions to join and speak in your voice channel!") 
     }
@@ -163,12 +170,12 @@ client.on("message", async message => {
         songs: [],
         volume: 5,
         playing: true,
-        timeoutTimer: 5000,
+        timeoutTimer: 3000,
         timeout: null,
         loopSong: false,
         loopSongQueue: false,
         currentSongQueue: [],
-        currentSongQueueIndex: 1,
+        currentSongQueueIndex: 2,
         isMuted: false
       } 
 
@@ -248,16 +255,11 @@ client.on("message", async message => {
       return message.channel.send("You have to be in a voice channel to let me leave!") 
     
     leaveVoiceAfterXSeconds(message, 10, true)
-    
    
     if(!serverQueue)
       return message.channel.send(`Leaving ${message.member.voice.channel}`)
 
-    serverQueue.songs = []
-    serverQueue.loopSong = false
-    serverQueue.loopSongQueue = false
-    serverQueue.currentSongQueue = []
-    serverQueue.currentSongQueueIndex = 1
+    clearServerQueue(serverQueue)
     dispatcher.end()
     return message.channel.send(`Leaving ${message.member.voice.channel}`) 
   }
@@ -277,21 +279,25 @@ client.on("message", async message => {
     }, time)
   }
 
+  function clearServerQueue(serverQueue){
+    serverQueue.songs = []
+    serverQueue.loopSong = false
+    serverQueue.loopSongQueue = false
+    serverQueue.currentSongQueue = []
+  }
+
   function loopCurrentSong(message, serverQueue){
-    if(!checkIfBotCanInteract(message, serverQueue, "loop")){
-      return
-    }
+    if(!checkIfBotCanInteract(message, serverQueue, "loop")) return
     
     if(serverQueue.loopSongQueue){
       serverQueue.loopSongQueue = false
       shiftSongQueueToIndex(serverQueue, serverQueue.currentSongQueueIndex - 1)
-      serverQueue.currentSongQueueIndex = 1
-      serverQueue.currentSongQueue = []
       message.channel.send("Disabled SongQueue Looping")
     }
 
     serverQueue.loopSong = !serverQueue.loopSong
     console.log(`[INFO] Changed Song Loop Status to ${serverQueue.loopSong}`)
+
     if(serverQueue.loopSong){
       console.log(`[INFO] Looping song: ${serverQueue.songs[0].title}`)
       message.channel.send(`Enabled Song Looping` )
@@ -302,10 +308,7 @@ client.on("message", async message => {
   }
 
   function loopCurrentSongQueue(message, serverQueue){
-    if (!message.member.voice.channel)
-      return message.channel.send("You have to be in a voice channel to loop the songqueue!") 
-    if (!serverQueue)
-      return message.channel.send("There is no songqueue that I could loop!")
+    if(!checkIfBotCanInteract(message, serverQueue, "loop")) return
 
     if(serverQueue.loopSong){
       serverQueue.loopSong = false
@@ -315,6 +318,7 @@ client.on("message", async message => {
 
     serverQueue.loopSongQueue = !serverQueue.loopSongQueue
     console.log(`[INFO] Changed current SongQueue Loop Status to ${serverQueue.loopSongQueue}`)
+
     if(serverQueue.loopSongQueue){
       console.log(`[INFO] Looping current SongQueue`)
       message.channel.send(`Enabled SongQueue Looping` )
@@ -324,8 +328,6 @@ client.on("message", async message => {
     } else {
       message.channel.send(`Disabled songqueue Looping` )
       shiftSongQueueToIndex(serverQueue, serverQueue.currentSongQueueIndex - 1)
-      serverQueue.currentSongQueue = []
-      serverQueue.currentSongQueueIndex = 1 
     }
   }
 
@@ -339,26 +341,18 @@ client.on("message", async message => {
   
   
   function skip(message, serverQueue) {
-    if(!checkIfBotCanInteract(message, serverQueue, "resume")){
-      return
-    }
+    if(!checkIfBotCanInteract(message, serverQueue, "skip")) return
 
     dispatcher.end()
     console.log(`[INFO] User: ${message.author.tag} skipped a Song`)
   }
   
   function stop(message, serverQueue) {
-    if(!checkIfBotCanInteract(message, serverQueue, "stop")){
-      return
-    }
+    if(!checkIfBotCanInteract(message, serverQueue, "stop")) return
     
     console.log(`[INFO] Stopped Playing Music and Cleared the Songqueue`)
     message.channel.send(`Cleared the queue and stopped playing`)
-    serverQueue.songs = []
-    serverQueue.loopSong = false
-    serverQueue.loopSongQueue = false
-    serverQueue.currentSongQueue = []
-    serverQueue.currentSongQueueIndex = 1
+    clearServerQueue(serverQueue)
     dispatcher.end() 
   }
 
@@ -369,12 +363,13 @@ client.on("message", async message => {
       return message.channel.send("There is no song that I could remove!")
 
     const index = parseInt(message.content.split(" ")[1])
+
     if(isNaN(index) || index > serverQueue.songs.length){
       console.log(`[WARN] Invalid input for method removeAtIndex()`)
       return message.channel.send("Please enter a valid number to remove a song from the queue ")
     } else if(index == 1){
-      console.log(`[WARN] Trying to rmove playing song`)
-      return message.channel.send(`You can't remove the song which is playing atm`)
+      console.log(`[WARN] Trying to remove playing song`)
+      return message.channel.send(`You can't remove the song which is currently playing`)
     }
     console.log(`[INFO] Removing Song at Index: ${index}`)
     
@@ -387,14 +382,14 @@ client.on("message", async message => {
     const serverQueue = queue.get(message.guild.id) 
     
     if(timeout != null) {
-      console.log(`[INFO] Clearing Timeout of ${serverQueue.timeoutTimer/1000}s`)
+      console.log(`[INFO] Clearing Timeout of ${serverQueue.timeoutTimer/1000}m`)
       clearTimeout(timeout)
     } 
 
     if (!song) {
       console.log(`[INFO] No more songs in Queue`)
       queue.delete(message.guild.id) 
-      console.log(`[INFO] Setting Timeout to ${serverQueue.timeoutTimer/1000}s`)
+      console.log(`[INFO] Setting Timeout to ${serverQueue.timeoutTimer/1000}m`)
       timeout = setTimeout(function(){
         leaveVoiceAfterXSeconds(message, serverQueue.timeoutTimer, false)
       }, serverQueue.timeoutTimer*100)
@@ -406,10 +401,11 @@ client.on("message", async message => {
       .play(ytdl(song.url, {filter: 'audioonly'}))
       .on('finish', () => {
         if(serverQueue.loopSongQueue){
-          if(serverQueue.currentSongQueueIndex > serverQueue.currentSongQueue.length){
+          const index = serverQueue.currentSongQueueIndex
+          if(index > serverQueue.currentSongQueue.length){
             serverQueue.currentSongQueueIndex = 1  
           }
-          playFromURL(message, serverQueue.currentSongQueue[serverQueue.currentSongQueueIndex-1])
+          playFromURL(message, serverQueue.currentSongQueue[index-1])
           serverQueue.currentSongQueueIndex += 1
         } else if(serverQueue.loopSong) {
           playFromURL(message, serverQueue.songs[0])
@@ -438,9 +434,7 @@ client.on("message", async message => {
   }
 
   function muteAudio(message, serverQueue){   
-    if(!checkIfBotCanInteract(message, serverQueue, "mute")){
-      return
-    }
+    if(!checkIfBotCanInteract(message, serverQueue, "mute")) return
 
     serverQueue.isMuted = !serverQueue.isMuted
     if(serverQueue.isMuted){
@@ -455,18 +449,14 @@ client.on("message", async message => {
   }
 
   function pause(message, serverQueue){
-    if(!checkIfBotCanInteract(message, serverQueue, "pause")){
-      return
-    }
+    if(!checkIfBotCanInteract(message, serverQueue, "pause")) return
 
     console.log(`[INFO] Pausing song`)
     dispatcher.pause()
   }
 
   function resume(message, serverQueue){
-    if(!checkIfBotCanInteract(message, serverQueue, "resume")){
-      return
-    }
+    if(!checkIfBotCanInteract(message, serverQueue, "resume")) return
 
     console.log(`[INFO] Resuming song`)
     dispatcher.resume()
@@ -482,6 +472,16 @@ client.on("message", async message => {
     message.channel.send(`Calling 911...`)
   }
 
+  function generateListOutputString(serverQueue, input){
+    let out = input
+    serverQueue.songs.forEach(function (element,i) {
+      if(i > 9) return
+      console.log(`${i+1}. ${element.title}`)
+      out = `${out}${i+1}. ${element.title}\n`
+    });
+    return out
+  }
+
   function listQueue(message, serverQueue){
     if(!serverQueue){
       console.log(`[INFO] No Songs in the Queue`)
@@ -491,11 +491,8 @@ client.on("message", async message => {
     console.log(`[INFO] Listing the enqueued Song List: `)
 
     var out = "```"
-    serverQueue.songs.forEach(function (element,i) {
-      if(i > 9) return
-      console.log(`${i+1}. ${element.title}`)
-      out = `${out}${i+1}. ${element.title}\n`
-    });
+    
+    out = generateListOutputString(serverQueue, out)
     
     if(serverQueue.songs.length > 10){
       out = out + `NOTE: There are ${serverQueue.songs.length} songs in the Queue`
