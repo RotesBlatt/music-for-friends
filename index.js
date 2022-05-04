@@ -54,7 +54,7 @@ client.on("message", async message => {
       muteAudio(message, serverQueue)
       return
     } else if (message.content.split(" ")[0] == `${prefix}skip` || message.content.split(" ")[0] == `${prefix}s`) {
-      skip(message, serverQueue, message.content.split(" ")[1]) 
+      skip(message, serverQueue) 
       return 
     } else if (message.content.split(" ")[0] == `${prefix}resume`) {
       resume(message, serverQueue)
@@ -278,10 +278,9 @@ client.on("message", async message => {
   }
 
   function loopCurrentSong(message, serverQueue){
-    if (!message.member.voice.channel)
-      return message.channel.send("You have to be in a voice channel to loop the song!") 
-    if (!serverQueue)
-      return message.channel.send("There is no song that I could loop!")
+    if(!checkIfBotCanInteract(message, serverQueue, "loop")){
+      return
+    }
     
     if(serverQueue.loopSongQueue){
       serverQueue.loopSongQueue = false
@@ -339,22 +338,19 @@ client.on("message", async message => {
   }
   
   
-  function skip(message, serverQueue, args) {
-    if (!message.member.voice.channel)
-      return message.channel.send("You have to be in a voice channel to stop the music!") 
-    if (!serverQueue)
-      return message.channel.send("There is no song that I could skip!") 
-   
+  function skip(message, serverQueue) {
+    if(!checkIfBotCanInteract(message, serverQueue, "resume")){
+      return
+    }
+
     dispatcher.end()
     console.log(`[INFO] User: ${message.author.tag} skipped a Song`)
   }
   
   function stop(message, serverQueue) {
-    if (!message.member.voice.channel)
-      return message.channel.send("You have to be in a voice channel to stop the music!") 
-      
-    if (!serverQueue)
-      return message.channel.send("There is no song that I could stop!") 
+    if(!checkIfBotCanInteract(message, serverQueue, "stop")){
+      return
+    }
     
     console.log(`[INFO] Stopped Playing Music and Cleared the Songqueue`)
     message.channel.send(`Cleared the queue and stopped playing`)
@@ -441,12 +437,10 @@ client.on("message", async message => {
     
   }
 
-  function muteAudio(message, serverQueue){
-    if (!message.member.voice.channel)
-      return message.channel.send("You have to be in a voice channel to mute the music!") 
-      
-    if (!serverQueue)
-      return message.channel.send("There is no song that I could mute!") 
+  function muteAudio(message, serverQueue){   
+    if(!checkIfBotCanInteract(message, serverQueue, "mute")){
+      return
+    }
 
     serverQueue.isMuted = !serverQueue.isMuted
     if(serverQueue.isMuted){
@@ -461,22 +455,18 @@ client.on("message", async message => {
   }
 
   function pause(message, serverQueue){
-    if (!message.member.voice.channel)
-      return message.channel.send("You have to be in a voice channel to pause the music!") 
-      
-    if (!serverQueue)
-      return message.channel.send("There is no song that I could pause!") 
+    if(!checkIfBotCanInteract(message, serverQueue, "pause")){
+      return
+    }
 
     console.log(`[INFO] Pausing song`)
     dispatcher.pause()
   }
 
   function resume(message, serverQueue){
-    if (!message.member.voice.channel)
-      return message.channel.send("You have to be in a voice channel to resume the music!") 
-      
-    if (!serverQueue)
-      return message.channel.send("There is no song that I could resume!") 
+    if(!checkIfBotCanInteract(message, serverQueue, "resume")){
+      return
+    }
 
     console.log(`[INFO] Resuming song`)
     dispatcher.resume()
@@ -523,6 +513,20 @@ client.on("message", async message => {
 
     console.log(`[INFO] Listing current playing song: ${serverQueue.songs[0].title} requested by ${serverQueue.songs[0].requestedBy}`)
     message.channel.send(`Currently playing: **${serverQueue.songs[0].title}**`)
+  }
+
+  function checkIfBotCanInteract(message, serverQueue, insert){
+    if (!message.member.voice.channel){
+      message.channel.send(`You have to be in a voice channel to ${insert} the music!`) 
+      return false
+    }
+      
+    if (!serverQueue){
+      message.channel.send(`There is no song that I could ${insert}!`)
+      return false
+    }
+      
+    return true
   }
 
 client.login(token)
