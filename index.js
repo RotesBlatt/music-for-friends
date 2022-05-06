@@ -37,8 +37,9 @@ client.on("message", async message => {
     if (!message.content.startsWith(prefix)) return 
     const serverQueue = queue.get(message.guild.id)
     handleUserInput(message, serverQueue)
-  }) 
+  })
 
+  // Checks which command was issued and calls the right method to continue 
   function handleUserInput(message, serverQueue){
     switch(message.content.split(" ")[0]){
       case `${prefix}ping`:
@@ -98,6 +99,7 @@ client.on("message", async message => {
     }
   }
   
+  // It checks if it's a YT-Link, YT-Playlist or a search-string and passes on the information to enqueueSongs() 
   async function execute(message, serverQueue) {
     const args = message.content.split(" ")
     
@@ -144,6 +146,7 @@ client.on("message", async message => {
     message.channel.send("The song you requested can not be played :|")
   }
 
+  // Helper function to extract the user input into a string
   function extractUserInput(args){
     let out = ""
     args.forEach(function (element,i) {
@@ -153,6 +156,7 @@ client.on("message", async message => {
     return out
   }
 
+  // Enqueues the song from the input 
   async function enqueueSongs(message, serverQueue, songInfo, isPlaylist){
     const voiceChannel = message.member.voice.channel
 
@@ -218,6 +222,7 @@ client.on("message", async message => {
     }   
   }
 
+  // Pushes every song from a YT Playlist into the songqueue
   function pushSongsToQueue(message, firstResult, queue){
     firstResult.items.forEach(element => {
       const song = {
@@ -229,6 +234,7 @@ client.on("message", async message => {
     })
   }
 
+  // The bot joins the voicechannel and starts playing the first song 
   async function joinVoice(voiceChannel, message, queueContruct){
     try {
       console.log("[INFO] Joining Voicechannel")
@@ -243,6 +249,7 @@ client.on("message", async message => {
     }
   } 
 
+  // Main function to play the audio, accounts for song-looping and queue-looping and sets a timeout to leave if no further songs are added to the queue
   async function playFromURL(message, song) {
     const serverQueue = queue.get(message.guild.id) 
     
@@ -297,6 +304,7 @@ client.on("message", async message => {
     }
   }
 
+  // Skips the song which is currently playing
   function skip(message, serverQueue) {
     if(!checkIfBotCanInteract(message, serverQueue, "skip")) return
 
@@ -304,6 +312,7 @@ client.on("message", async message => {
     console.log(`[INFO] User: ${message.author.tag} skipped a Song`)
   }
 
+  // Stops the bot from playing and clears the songqueue
   function stop(message, serverQueue) {
     if(!checkIfBotCanInteract(message, serverQueue, "stop")) return
     
@@ -313,6 +322,7 @@ client.on("message", async message => {
     dispatcher.end() 
   }
 
+  // Pauses the player
   function pause(message, serverQueue){
     if(!checkIfBotCanInteract(message, serverQueue, "pause")) return
 
@@ -320,6 +330,7 @@ client.on("message", async message => {
     dispatcher.pause()
   }
 
+  // Resumes the player
   function resume(message, serverQueue){
     if(!checkIfBotCanInteract(message, serverQueue, "resume")) return
 
@@ -327,6 +338,7 @@ client.on("message", async message => {
     dispatcher.resume()
   }
 
+  // Removes the song in the queue at the given index
   function removeAtIndex(message, serverQueue){
     if (!message.member.voice.channel)
       return message.channel.send("You have to be in a voice channel to remove a song from the queue!") 
@@ -348,6 +360,7 @@ client.on("message", async message => {
     serverQueue.songs.splice(index-1, index-1)
   }
 
+  // Mutes the bot until unmuted, Mute is disabled automatically after skiping a song
   function muteAudio(message, serverQueue){   
     if(!checkIfBotCanInteract(message, serverQueue, "mute")) return
 
@@ -362,6 +375,7 @@ client.on("message", async message => {
     }  
   }
 
+  // Outputs the entire songqueue
   function listQueue(message, serverQueue){
     if(!serverQueue){
       console.log(`[INFO] No Songs in the Queue`)
@@ -382,6 +396,7 @@ client.on("message", async message => {
     message.channel.send(`Songs in the Queue: \n${out}`)
   }
 
+  // Outputs the name of the currently playing song 
   function listCurrentPlayingSong(message, serverQueue){
     if(!serverQueue){
       console.log(`[INFO] No Songs in the Queue`)
@@ -392,6 +407,7 @@ client.on("message", async message => {
     message.channel.send(`Currently playing: **${serverQueue.songs[0].title}**`)
   }
 
+  // Loops the entire songqueue until disabled, at which point is skips the queue forward to the point, where the queue was stopped
   function loopCurrentSongQueue(message, serverQueue){
     if(!checkIfBotCanInteract(message, serverQueue, "loop")) return
 
@@ -416,6 +432,7 @@ client.on("message", async message => {
     }
   }
 
+  // Loops the first song in the queue until disabled
   function loopCurrentSong(message, serverQueue){
     if(!checkIfBotCanInteract(message, serverQueue, "loop")) return
     
@@ -437,6 +454,7 @@ client.on("message", async message => {
     
   }
 
+  // The bot joins the voicechannel in which the user is in
   async function join(message){
     const voiceChannel = message.member.voice.channel
     if (!voiceChannel)
@@ -452,6 +470,7 @@ client.on("message", async message => {
     }
   }
 
+  // Method is responsible for leaving the voicechannel
   function leaveVoiceChannel(message, serverQueue){
     if (!message.member.voice.channel)
       return message.channel.send("You have to be in a voice channel to let me leave!") 
@@ -466,6 +485,7 @@ client.on("message", async message => {
     return message.channel.send(`Leaving ${message.member.voice.channel}`) 
   }
 
+  // Guides the user on which commands can be used to interact with the bot
   async function help(message){
     console.log(`[INFO] Sending user Help`)
     message.author.send({embed: {
@@ -482,7 +502,7 @@ client.on("message", async message => {
     })
   }
 
-  //Helper function
+  // Helper function
   function clearServerQueue(serverQueue){
     serverQueue.songs = []
     serverQueue.loopSong = false
@@ -490,7 +510,7 @@ client.on("message", async message => {
     serverQueue.currentSongQueue = []
   }
 
-  //Helper function
+  // Sets a timeout depending on the input, so the bot can leave at given time
   function leaveVoiceAfterXSeconds(message, time, immediate){
     console.log(`[INFO] Leaving Voice Channel`)
     if(immediate) {
@@ -506,7 +526,7 @@ client.on("message", async message => {
     }, time)
   }
 
-  //Helper function
+  // Helper function
   function shiftSongQueueToIndex(serverQueue, index){
     serverQueue.songs.forEach(function (i) {
       if(i >= index) return
@@ -515,7 +535,7 @@ client.on("message", async message => {
     })
   }
   
-  //Helper function
+  // Helper function
   function generateListOutputString(serverQueue, input){
     let out = input
     serverQueue.songs.forEach(function (element,i) {
@@ -526,7 +546,7 @@ client.on("message", async message => {
     return out
   }
 
-  //Helper function
+  // Helper function
   function checkIfBotCanInteract(message, serverQueue, insert){
     if (!message.member.voice.channel){
       message.channel.send(`You have to be in a voice channel to ${insert} the music!`) 
@@ -544,7 +564,8 @@ client.on("message", async message => {
 client.login(token)
 
 
-//TODO: Download attached files (if mp3) and save them to be played later (https://stackoverflow.com/questions/51550993/download-file-to-local-computer-sent-attatched-to-message-discord/51565540)
-//TODO: Play downloaded mp3's via command (search for name input?)
-//TODO: Figure out how to play Songs from Spotify
-//TODO: Clip abspielen bevor der Bot den Channel verlässt (https://www.youtube.com/watch?v=r5sTTlph2Vk)
+// TODO: Download attached files (if mp3) and save them to be played later (https://stackoverflow.com/questions/51550993/download-file-to-local-computer-sent-attatched-to-message-discord/51565540)
+// TODO: Play downloaded mp3's via command (search for name input?)
+// TODO: Figure out how to play Songs from Spotify
+// TODO: Clip abspielen bevor der Bot den Channel verlässt (https://www.youtube.com/watch?v=r5sTTlph2Vk)
+// TODO: Make every message to the channel an embed output
