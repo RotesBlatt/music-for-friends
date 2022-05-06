@@ -18,7 +18,10 @@ const client = new Discord.Client()
 var dispatcher = null
 var timeout = null
 
+const COLOR_ERROR = 0xff0000
+const COLOR_INFO = 0x00d5ff
 
+// Triggers once when starting the bot
 client.on('ready', () => {
   console.log(`Logged in as '${client.user.tag}'`)
   console.log('Ready!') 
@@ -32,6 +35,7 @@ client.once('disconnect', () => {
   console.log('Disconnect!') 
 }) 
 
+// Triggers when receiving a message in a voicechannel
 client.on("message", async message => {
     if (message.author.bot) return 
     if (!message.content.startsWith(prefix)) return 
@@ -92,22 +96,9 @@ client.on("message", async message => {
         break
       default:
         console.log(`[INFO] User: ${message.author.tag} used an invalid Command`)
-        const embed = createEmbed(0xff0000, 'Error', 'You need to enter a valid command!')
+        const embed = createEmbed(COLOR_ERROR, 'Error', 'You need to enter a valid command!')
         message.channel.send({embed})
         break
-    }
-  }
-
-  function createEmbed(color, name, value){
-    return embed = {
-      color: color,
-      fields: [
-        {
-          name: `${name}`,
-          value: `${value}`,
-          inline: true,
-        },
-      ],
     }
   }
   
@@ -119,7 +110,7 @@ client.on("message", async message => {
     
     const voiceChannel = message.member.voice.channel 
     if (!voiceChannel){
-      const embed = createEmbed(0xff0000, 'Error', 'You need to be in a voice channel to play music!')
+      const embed = createEmbed(COLOR_ERROR, 'Error', 'You need to be in a voice channel to play music!')
       return message.channel.send({embed}) 
     }
 
@@ -127,7 +118,7 @@ client.on("message", async message => {
     const permissions = voiceChannel.permissionsFor(message.client.user) 
     
     if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
-      const embed = createEmbed(0xff0000, 'Error', 'I need the permissions to join and speak in your voice channel!')
+      const embed = createEmbed(COLOR_ERROR, 'Error', 'I need the permissions to join and speak in your voice channel!')
       return message.channel.send({embed}) 
     }
 
@@ -160,7 +151,7 @@ client.on("message", async message => {
       console.log(`[INFO] Playlist URL Invalid`)      
     }  
     
-    const embed = createEmbed(0xff0000, 'Error', 'The song you requested can not be played :|')
+    const embed = createEmbed(COLOR_ERROR, 'Error', 'The song you requested can not be played :|')
     message.channel.send({embed})
   }
 
@@ -214,7 +205,7 @@ client.on("message", async message => {
       if(isPlaylist) {
         pushSongsToQueue(message, firstResult, queueContruct)
         console.log(`[INFO] User: ${message.author.tag} added ${firstResult.items.length} songs to the queue`)
-        const embed = createEmbed(0x00d5ff, 'Info', `${queueContruct.songs.length} songs have been added to the queue` )
+        const embed = createEmbed(COLOR_INFO, 'Info', `${queueContruct.songs.length} songs have been added to the queue` )
         message.channel.send({embed})
       } else {
         queueContruct.songs.push(song)
@@ -236,7 +227,7 @@ client.on("message", async message => {
       } else {
         serverQueue.songs.push(song)
         console.log(`[INFO] User: ${message.author.tag} added song: ${song.title} to the Queue`)
-        const embed = createEmbed(0x00d5ff, 'Info', `**${song.title}** has been added to the queue!`)
+        const embed = createEmbed(COLOR_INFO, 'Info', `**${song.title}** has been added to the queue!`)
         return message.channel.send({embed})
       }
     }   
@@ -311,7 +302,7 @@ client.on("message", async message => {
           throw new Error();
         } catch {
           dispatcher.end()
-          const embed = createEmbed(0xff0000, 'Error', 'There was an error playing this song, skipping ahead')
+          const embed = createEmbed(COLOR_ERROR, 'Error', 'There was an error playing this song, skipping ahead')
           message.channel.send({embed})
           console.error(error)
           return
@@ -321,7 +312,7 @@ client.on("message", async message => {
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5) 
     if(!serverQueue.loopSong){
       console.log(`[INFO] Now playing: ${song.title} requested by ${song.requestedBy}`)
-      const embed = createEmbed(0x00d5ff, 'Info', `Now playing: **${song.title}**`)
+      const embed = createEmbed(COLOR_INFO, 'Info', `Now playing: **${song.title}** requested by ${song.requestedBy}`)
       serverQueue.textChannel.send({embed}) 
     }
   }
@@ -339,7 +330,7 @@ client.on("message", async message => {
     if(!checkIfBotCanInteract(message, serverQueue, "stop")) return
     
     console.log(`[INFO] Stopped Playing Music and Cleared the Songqueue`)
-    const embed = createEmbed(0x00d5ff, 'Info', `Cleared the queue and stopped playing`)
+    const embed = createEmbed(COLOR_INFO, 'Info', `Cleared the queue and stopped playing`)
     message.channel.send({embed})
     clearServerQueue(serverQueue)
     dispatcher.end() 
@@ -369,16 +360,16 @@ client.on("message", async message => {
 
     if(isNaN(index) || index > serverQueue.songs.length){
       console.log(`[WARN] Invalid input for method removeAtIndex()`)
-      const embed = createEmbed(0xff0000, 'Error', 'Please enter a valid number to remove a song from the queue')
+      const embed = createEmbed(COLOR_ERROR, 'Error', 'Please enter a valid number to remove a song from the queue')
       return message.channel.send({embed})
     } else if(index == 1){
       console.log(`[WARN] Trying to remove playing song`)
-      const embed = createEmbed(0xff0000, 'Error', "You can't remove the song which is currently playing")
+      const embed = createEmbed(COLOR_ERROR, 'Error', "You can't remove the song which is currently playing")
       return message.channel.send({embed})
     }
     console.log(`[INFO] Removing Song at Index: ${index}`)
     serverQueue.songs.splice(index-1, index-1)
-    const embed = createEmbed(0x00d5ff, 'Info', `Removing **${serverQueue.songs[index-1].title}** from the queue`)
+    const embed = createEmbed(COLOR_INFO, 'Info', `Removing **${serverQueue.songs[index-1].title}** from the queue`)
     message.channel.send({embed})
   }
 
@@ -401,33 +392,34 @@ client.on("message", async message => {
   function listQueue(message, serverQueue){
     if(!serverQueue){
       console.log(`[INFO] No Songs in the Queue`)
-      const embed = createEmbed(0x00d5ff, 'Error', 'There are no songs Playing atm')
+      const embed = createEmbed(COLOR_ERROR, 'Error', 'There are no songs Playing atm')
       return message.channel.send({embed})
     }
 
     console.log(`[INFO] Listing the enqueued Song List: `)
 
-    var out = "```"
     // TODO: Embed the queue for the output
-    out = generateListOutputString(serverQueue, out)
+    let out = generateListOutputString(serverQueue, "")
+    
     
     if(serverQueue.songs.length > 10){
       out = out + `NOTE: There are ${serverQueue.songs.length} songs in the Queue`
       console.log(`[INFO] Songs in Queue: ${serverQueue.songs.length}`)
     }
-    out = out + '```'
-    message.channel.send(`Songs in the Queue: \n${out}`)
+
+    const embed = createEmbed(COLOR_INFO, 'Songs in the queue:', `${out}`)
+    message.channel.send({embed})
   }
 
   // Outputs the name of the currently playing song 
   function listCurrentPlayingSong(message, serverQueue){
     if(!serverQueue){
       console.log(`[INFO] No Songs in the Queue`)
-      const embed = createEmbed(0xff0000, 'Error', 'There are no songs Playing atm')
+      const embed = createEmbed(COLOR_ERROR, 'Error', 'There are no songs Playing atm')
       return message.channel.send({embed})
     }
 
-    const embed = createEmbed(0x00d5ff, 'Info', `${serverQueue.songs[0].title} requested by @${serverQueue.songs[0].requestedBy}`)
+    const embed = createEmbed(COLOR_INFO, 'Info', `${serverQueue.songs[0].title} requested by @${serverQueue.songs[0].requestedBy}`)
     message.channel.send({embed})
 
     console.log(`[INFO] Listing current playing song: ${serverQueue.songs[0].title} requested by ${serverQueue.songs[0].requestedBy}`)
@@ -439,7 +431,7 @@ client.on("message", async message => {
 
     if(serverQueue.loopSong){
       serverQueue.loopSong = false
-      const embed = createEmbed(0x00d5ff, 'Info', 'Disabled Song Looping')
+      const embed = createEmbed(COLOR_INFO, 'Info', 'Disabled Song Looping')
       message.channel.send({embed})
     }
 
@@ -449,13 +441,13 @@ client.on("message", async message => {
 
     if(serverQueue.loopSongQueue){
       console.log(`[INFO] Looping current SongQueue`)
-      const embed = createEmbed(0x00d5ff, 'Info', 'Enabled SongQueue Looping')
+      const embed = createEmbed(COLOR_INFO, 'Info', 'Enabled SongQueue Looping')
       message.channel.send({embed})
 
       serverQueue.currentSongQueue = serverQueue.songs
       serverQueue.currentSongQueueIndex = 2
     } else {
-      const embed = createEmbed(0x00d5ff, 'Info', 'Disabled songqueue Looping')
+      const embed = createEmbed(COLOR_INFO, 'Info', 'Disabled songqueue Looping')
       message.channel.send({embed})
       shiftSongQueueToIndex(serverQueue, serverQueue.currentSongQueueIndex - 1)
     }
@@ -468,7 +460,7 @@ client.on("message", async message => {
     if(serverQueue.loopSongQueue){
       serverQueue.loopSongQueue = false
       shiftSongQueueToIndex(serverQueue, serverQueue.currentSongQueueIndex - 1)
-      const embed = createEmbed(0x00d5ff, 'Info', 'Disabled songqueue Looping')
+      const embed = createEmbed(COLOR_INFO, 'Info', 'Disabled songqueue Looping')
       message.channel.send({embed})
     }
 
@@ -477,10 +469,10 @@ client.on("message", async message => {
 
     if(serverQueue.loopSong){
       console.log(`[INFO] Looping song: ${serverQueue.songs[0].title}`)
-      const embed = createEmbed(0x00d5ff, 'Info', 'Enabled Song Looping')
+      const embed = createEmbed(COLOR_INFO, 'Info', 'Enabled Song Looping')
       message.channel.send({embed})
     } else {
-      const embed = createEmbed(0x00d5ff, 'Info', 'Disabled Song Looping')
+      const embed = createEmbed(COLOR_INFO, 'Info', 'Disabled Song Looping')
       message.channel.send({embed})
     }
     
@@ -490,7 +482,7 @@ client.on("message", async message => {
   async function join(message){
     const voiceChannel = message.member.voice.channel
     if (!voiceChannel){
-      const embed = createEmbed(0xff0000, 'Error', 'You have to be in a voice channel to let the bot join a voice channel')
+      const embed = createEmbed(COLOR_ERROR, 'Error', 'You have to be in a voice channel to let the bot join a voice channel')
       return message.channel.send({embed})
     }
        
@@ -498,11 +490,11 @@ client.on("message", async message => {
     try {
       await voiceChannel.join()
       console.log(`[INFO] Joined a voice channel`)
-      const embed = createEmbed(0x00d5ff, 'Info', `Joined voice channel: ${message.member.voice.channel}`)
+      const embed = createEmbed(COLOR_INFO, 'Info', `Joined voice channel: ${message.member.voice.channel}`)
       message.channel.send({embed})
     } catch (err) {
       console.log(err) 
-      const embed = createEmbed(0xff0000, 'Error', `${err}`)
+      const embed = createEmbed(COLOR_ERROR, 'Error', `${err}`)
       return message.channel.send({embed})
     }
   }
@@ -510,13 +502,13 @@ client.on("message", async message => {
   // Method is responsible for leaving the voicechannel
   function leaveVoiceChannel(message, serverQueue){
     if (!message.member.voice.channel){
-      const embed = createEmbed(0xff0000, 'Error', 'You have to be in a voice channel to let me leave!')
+      const embed = createEmbed(COLOR_ERROR, 'Error', 'You have to be in a voice channel to let me leave!')
       return message.channel.send({embed})
     }
        
     
     leaveVoiceAfterXSeconds(message, 10, true)
-    const embed = createEmbed(0x00d5ff, 'Info', `Leaving ${message.member.voice.channel}`)
+    const embed = createEmbed(COLOR_INFO, 'Info', `Leaving ${message.member.voice.channel}`)
     if(!serverQueue){
       return message.channel.send({embed})
     }
@@ -530,7 +522,7 @@ client.on("message", async message => {
   async function help(message){
     console.log(`[INFO] Sending user Help`)
     message.author.send({embed: {
-      color: 0x00d5ff,
+      color: COLOR_INFO,
       title: 'Music For Friends Guide',
       fields: [
         {
@@ -592,18 +584,32 @@ client.on("message", async message => {
   // Helper function
   function checkIfBotCanInteract(message, serverQueue, insert){
     if (!message.member.voice.channel){
-      const embed = createEmbed(0xff0000, 'Error', `You have to be in a voice channel to ${insert} the music!`)
+      const embed = createEmbed(COLOR_ERROR, 'Error', `You have to be in a voice channel to ${insert} the music!`)
       message.channel.send({embed})  
       return false
     }
     
     if (!serverQueue){
-      const embed = createEmbed(0xff0000, 'Error', `There is no song that I could ${insert}!`)
+      const embed = createEmbed(COLOR_ERROR, 'Error', `There is no song that I could ${insert}!`)
       message.channel.send({embed}) 
       return false
     }
       
     return true
+  }
+
+  // Creates a basic embed with a given color, name and text
+  function createEmbed(color, name, value){
+    return embed = {
+      color: color,
+      fields: [
+        {
+          name: `${name}`,
+          value: `${value}`,
+          inline: true,
+        },
+      ],
+    }
   }
 
 client.login(token)
@@ -613,4 +619,3 @@ client.login(token)
 // TODO: Play downloaded mp3's via command (search for name input?)
 // TODO: Figure out how to play Songs from Spotify
 // TODO: Clip abspielen bevor der Bot den Channel verlässt (https://www.youtube.com/watch?v=r5sTTlph2Vk)
-// TODO: Make every message to the channel an embed output
