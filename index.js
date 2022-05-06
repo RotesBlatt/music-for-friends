@@ -1,10 +1,13 @@
 // Referenz: https://gabrieltanner.org/blog/dicord-music-bot
 // Discord V12 Docs: https://v12.discordjs.guide/voice/
+// Embed Builder: https://autocode.com/tools/discord/embed-builder/
 
 const Discord = require("discord.js")
 const ytdl = require("ytdl-core")
 const ytpl = require("ytpl")
 const ytsr = require("ytsr")
+const lib = require('lib')({token: process.env.STDLIB_SECRET_TOKEN});
+
 
 const {prefix, token} = require("./config.json")
 
@@ -462,14 +465,20 @@ client.on("message", async message => {
     return message.channel.send(`Leaving ${message.member.voice.channel}`) 
   }
 
-  function help(message){
+  async function help(message){
     console.log(`[INFO] Sending user Help`)
-    //TODO: Send user a private dm which contains information about how to use this bot
-    message.author.send(`
-    **Welcome to Music for Friends, ${message.author.tag.split("#")[0]}!**
-    This is going to help you when im finished with the basic command stuff    
-    `)
-    message.channel.send(`Calling 911...`)
+    message.author.send({embed: {
+      color: 0x00d5ff,
+      title: 'Music For Friends Guide',
+      fields: [{
+        name: 'Commands:',
+        value: '➜ !p or !play - Search for YT Link or for keywords (f.e. !play https://www.youtube.com/watch?v=dQw4w9WgXcQ)\n➜ !s or !skip - Skip the currently playing song\n➜ !stop - Stops the music and clears the Musicqueue\n➜ !pause - Pauses the song\n➜ !resume - Resumues the song\n➜ !r or !remove - Removes the Song at given position (f.e. : !remove 4)\n➜ !mute or !unmute - Mutes/Unmutes the bot\n➜ !q or !queue - Shows the first 10 songs in the Queue\n➜ !np - Shows which song is playing at the moment\n➜ !qloop or !queueLoop - Loops/Unloops the Musicqueue \n➜ !loop - Loops/Unloops the currently playing song\n➜ !join - The bot joins your voicechannel\n➜ !leave - The bot leaves your voicechannel',
+        },
+      ],
+      footer: {
+        text: 'If the bot misbehaves, ask RotesBlatt#4578 for help',
+      },}
+    })
   }
 
   //Helper function
