@@ -1,6 +1,7 @@
 // Referenz: https://gabrieltanner.org/blog/dicord-music-bot
 // Discord V12 Docs: https://v12.discordjs.guide/voice/
 // Embed Builder: https://autocode.com/tools/discord/embed-builder/
+// Hot to Embed in Discord: https://discordjs.guide/popular-topics/embeds.html#using-the-embed-constructor
 
 const Discord = require("discord.js")
 const ytdl = require("ytdl-core")
