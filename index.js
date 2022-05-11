@@ -11,7 +11,6 @@ const ytsr = require("ytsr")
 
 
 const {prefix, token} = require("./config.json")
-const { resetInTerminal } = require("./reset")
 
 const queue = new Map() 
 const client = new Discord.Client()
