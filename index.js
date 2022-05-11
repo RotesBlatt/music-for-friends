@@ -7,7 +7,6 @@ const Discord = require("discord.js")
 const ytdl = require("ytdl-core")
 const ytpl = require("ytpl")
 const ytsr = require("ytsr")
-const lib = require('lib')({token: process.env.STDLIB_SECRET_TOKEN});
 
 
 const {prefix, token} = require("./config.json")
@@ -93,6 +92,9 @@ client.on("message", async message => {
         break
       case `${prefix}help`:
         help(message)
+        break
+      case `${prefix}reset`:
+        softResetBot(message, serverQueue)
         break
       default:
         console.log(`[INFO] User: ${message.author.tag} used an invalid Command`)
@@ -537,6 +539,20 @@ client.on("message", async message => {
     })
   }
 
+  function softResetBot(message, serverQueue){
+    console.log(`[INFO] Resetting Bot`)
+
+    clearServerQueue(serverQueue)
+    stop(message, serverQueue)
+    leaveVoiceAfterXSeconds(message, 0, true)
+
+    const embed = createEmbed(COLOR_INFO, 'Info', 'Resetting ...')
+    message.channel.send({embed})
+      .then(msg => client.destroy())
+      .then(() => client.login(token))
+    console.log("here")
+  }
+
   // Helper function
   function clearServerQueue(serverQueue){
     serverQueue.songs = []
@@ -615,7 +631,7 @@ client.on("message", async message => {
 client.login(token)
 
 
-// TODO: Download attached files (if mp3) and save them to be played later (https://stackoverflow.com/questions/51550993/download-file-to-local-computer-sent-attatched-to-message-discord/51565540)
-// TODO: Play downloaded mp3's via command (search for name input?)
 // TODO: Figure out how to play Songs from Spotify
 // TODO: Clip abspielen bevor der Bot den Channel verlässt (https://www.youtube.com/watch?v=r5sTTlph2Vk)
+// TODO: Reset command, which restarts the bot (opens a script which executes commands on the command line)
+// TODO: Show the at which point (timestamp) when using !np
