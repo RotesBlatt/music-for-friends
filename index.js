@@ -4,10 +4,10 @@
 // Hot to Embed in Discord: https://discordjs.guide/popular-topics/embeds.html#using-the-embed-constructor
 
 const Discord = require("discord.js")
+const { exit } = require("process")
 const ytdl = require("ytdl-core")
 const ytpl = require("ytpl")
 const ytsr = require("ytsr")
-const lib = require('lib')({token: process.env.STDLIB_SECRET_TOKEN});
 
 
 const {prefix, token} = require("./config.json")
@@ -93,6 +93,12 @@ client.on("message", async message => {
         break
       case `${prefix}help`:
         help(message)
+        break
+      case `${prefix}reset`:
+        softResetBot(message, serverQueue)
+        break
+      case `${prefix}hardreset`:
+        hardResetBot()
         break
       default:
         console.log(`[INFO] User: ${message.author.tag} used an invalid Command`)
@@ -537,6 +543,37 @@ client.on("message", async message => {
     })
   }
 
+  // After the Client get's destroyed, log it back in to restart the client connection 
+  function softResetBot(message, serverQueue){
+    console.log(`[INFO] Resetting Bot`)
+
+    clearServerQueue(serverQueue)
+    stop(message, serverQueue)
+    leaveVoiceAfterXSeconds(message, 0, true)
+
+    const embed = createEmbed(COLOR_INFO, 'Info', 'Resetting ...')
+    message.channel.send({embed})
+      .then(msg => client.destroy())
+      .then(() => client.login(token))
+  }
+
+  // Calls reset.js upon exiting index.js to hard reset the program.
+  // USE ONLY IF REALLY NECESSARY, OTHERWISE USE METHOD: softResetBot()
+  function hardResetBot(){
+    const spawn = require('child_process').spawn
+
+    process.on('exit', () => {
+      const child = spawn('node', ['reset.js'], {
+        cwd: process.cwd(),
+        detached: false,
+        stdio: 'inherit'
+    });
+  
+     child.unref();
+    })
+    process.exit(0)
+  }
+
   // Helper function
   function clearServerQueue(serverQueue){
     serverQueue.songs = []
@@ -615,7 +652,7 @@ client.on("message", async message => {
 client.login(token)
 
 
-// TODO: Download attached files (if mp3) and save them to be played later (https://stackoverflow.com/questions/51550993/download-file-to-local-computer-sent-attatched-to-message-discord/51565540)
-// TODO: Play downloaded mp3's via command (search for name input?)
 // TODO: Figure out how to play Songs from Spotify
 // TODO: Clip abspielen bevor der Bot den Channel verlässt (https://www.youtube.com/watch?v=r5sTTlph2Vk)
+// TODO: Reset command, which restarts the bot (opens a script which executes commands on the command line)
+// TODO: Show the at which point (timestamp) when using !np
