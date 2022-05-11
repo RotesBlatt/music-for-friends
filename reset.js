@@ -2,7 +2,7 @@ function resetInTerminal(pid){
     const exec = require('child_process').exec
     const process = require('process')
     
-    exec(`bash reset.sh ${pid} ${process.pid}`,
+    exec(`bash reset.sh &`,
         function (error, stdout, stderr) {
             console.log('stdout: ' + stdout);
             console.log('stderr: ' + stderr);
