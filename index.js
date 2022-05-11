@@ -561,14 +561,14 @@ client.on("message", async message => {
     const spawn = require('child_process').spawn
 
     process.on('exit', () => {
-      const child = spawn('node', ['index.js'], {
+      const child = spawn('node', ['reset.js'], {
         detached: true,
         stdio: 'ignore'
      });
   
      child.unref();
     })
-    exit(0)
+    process.exit(0)
   }
 
   // Helper function
