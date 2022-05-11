@@ -4,6 +4,7 @@
 // Hot to Embed in Discord: https://discordjs.guide/popular-topics/embeds.html#using-the-embed-constructor
 
 const Discord = require("discord.js")
+const { exit } = require("process")
 const ytdl = require("ytdl-core")
 const ytpl = require("ytpl")
 const ytsr = require("ytsr")
@@ -561,6 +562,7 @@ client.on("message", async message => {
     const reset = require('./reset')
 
     resetInTerminal()
+    exit(0)
   }
 
   // Helper function
