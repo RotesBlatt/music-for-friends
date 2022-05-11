@@ -10,6 +10,7 @@ const ytsr = require("ytsr")
 
 
 const {prefix, token} = require("./config.json")
+const { resetInTerminal } = require("./reset")
 
 const queue = new Map() 
 const client = new Discord.Client()
@@ -95,6 +96,9 @@ client.on("message", async message => {
         break
       case `${prefix}reset`:
         softResetBot(message, serverQueue)
+        break
+      case `${prefix}hardreset`:
+        hardResetBot()
         break
       default:
         console.log(`[INFO] User: ${message.author.tag} used an invalid Command`)
@@ -551,6 +555,12 @@ client.on("message", async message => {
       .then(msg => client.destroy())
       .then(() => client.login(token))
     console.log("here")
+  }
+
+  function hardResetBot(){
+    const reset = require('./reset')
+
+    resetInTerminal()
   }
 
   // Helper function
