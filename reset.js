@@ -7,4 +7,3 @@ process.on('exit', () => {
    })
    child.unref()
 })
-process.exit(0)
