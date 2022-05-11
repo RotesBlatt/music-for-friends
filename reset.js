@@ -1,7 +1,7 @@
 function resetInTerminal(){
     const exec = require('child_process').exec
 
-    exec('xdotool key ctrl+c', function (error, stdout, stderr) {
+    exec('killall -9 index', function (error, stdout, stderr) {
         console.log('stdout: ' + stdout);
         console.log('stderr: ' + stderr);
         if (error !== null) {
