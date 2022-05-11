@@ -559,11 +559,17 @@ client.on("message", async message => {
   }
 
   function hardResetBot(){
-    const reset = require('./reset')
-    const process = require('process')
+    const spawn = require('child_process').spawn
 
-    
-    exit(0).then(resetInTerminal(process.pid))
+    process.on('exit', () => {
+      const child = spawn('node', ['some_other_script.js'], {
+        detached: true,
+        stdio: 'ignore'
+     });
+  
+     child.unref();
+    })
+
   }
 
   // Helper function
