@@ -560,8 +560,9 @@ client.on("message", async message => {
 
   function hardResetBot(){
     const reset = require('./reset')
+    const process = require('process')
 
-    resetInTerminal()
+    resetInTerminal(process.pid)
     exit(0)
   }
 

@@ -1,3 +1,3 @@
 #!/bin/bash
-sleep 2
+wait $1
 echo node index.js
