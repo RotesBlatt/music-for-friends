@@ -543,6 +543,7 @@ client.on("message", async message => {
     })
   }
 
+  // After the Client get's destroyed, log it back in to restart the client connection 
   function softResetBot(message, serverQueue){
     console.log(`[INFO] Resetting Bot`)
 
@@ -554,9 +555,10 @@ client.on("message", async message => {
     message.channel.send({embed})
       .then(msg => client.destroy())
       .then(() => client.login(token))
-    console.log("here")
   }
 
+  // Calls reset.js upon exiting index.js to hard reset the program.
+  // USE ONLY IF REALLY NECESSARY, OTHERWISE USE METHOD: softResetBot()
   function hardResetBot(){
     const spawn = require('child_process').spawn
 
