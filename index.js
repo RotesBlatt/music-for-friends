@@ -561,7 +561,7 @@ client.on("message", async message => {
     const spawn = require('child_process').spawn
 
     process.on('exit', () => {
-      const child = spawn('node', ['some_other_script.js'], {
+      const child = spawn('node', ['index.js'], {
         detached: true,
         stdio: 'ignore'
      });
