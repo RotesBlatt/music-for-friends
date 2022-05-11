@@ -568,7 +568,7 @@ client.on("message", async message => {
   
      child.unref();
     })
-
+    exit(0)
   }
 
   // Helper function
