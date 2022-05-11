@@ -562,8 +562,7 @@ client.on("message", async message => {
 
     process.on('exit', () => {
       const child = spawn('node', ['reset.js'], {
-        detached: true,
-        stdio: 'ignore'
+        detached: true
      });
   
      child.unref();
