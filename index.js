@@ -561,7 +561,10 @@ client.on("message", async message => {
     const spawn = require('child_process').spawn
 
     process.on('exit', () => {
-      const child = spawn('node', ['reset.js']);
+      const child = spawn('node', ['reset.js'], {
+        cwd: process.cwd(),
+        stdio: 'inherit'
+    });
   
      child.unref();
     })
