@@ -563,6 +563,7 @@ client.on("message", async message => {
     process.on('exit', () => {
       const child = spawn('node', ['reset.js'], {
         cwd: process.cwd(),
+        detached: false,
         stdio: 'inherit'
     });
   
