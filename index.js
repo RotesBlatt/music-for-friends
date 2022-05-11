@@ -562,8 +562,8 @@ client.on("message", async message => {
     const reset = require('./reset')
     const process = require('process')
 
-    resetInTerminal(process.pid)
-    exit(0)
+    
+    exit(0).then(resetInTerminal(process.pid))
   }
 
   // Helper function
